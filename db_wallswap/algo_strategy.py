@@ -45,6 +45,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.scored_on_locations = []
         self.opponent_spawns = []
         self.predicted_opponent_spawns = []
+        # self.opponent_MP = 0
+        self.opponent_freq = []
+        # self.current_turn = 0
         self.logged = True
 
     def on_turn(self, turn_state):
@@ -77,7 +80,46 @@ class AlgoStrategy(gamelib.AlgoCore):
         If there are no stationary units to attack in the front, we will send Scouts to try and score quickly.
         """
         self.logged = True
+        self.predict_opponent_attack(game_state)
+        # First, place/restore basic defenses
+        self.build_defences(game_state)
+        # Now build reactive defenses based on where the enemy scored
+        self.build_reactive_defense(game_state)
         
+        if game_state.turn_number % 2 == 0:
+            game_state.attempt_spawn(SCOUT, [13, 0], 1000)
+            return
+
+        #build support cannon
+        self.build_support_cannon(game_state)
+
+    def predict_opponent_attack(self, game_state):
+        #get latest spawn info
+        if self.opponent_spawns:
+            last_spawns = self.opponent_spawns[-1]
+            # just check scouts for now
+            scouts_list = last_spawns.get('scouts')
+            # can adjust threshold for trigger later
+            self.opponent_freq.append(len(scouts_list))
+        else:
+            self.opponent_freq.append(0)
+        gamelib.debug_write(self.opponent_freq)
+
+        attack_next = False
+        
+        spawn_turns = [i for i, spawn in enumerate(self.opponent_freq) if spawn > 0]
+        #gamelib.debug_write(spawn_turns)
+    
+        if len(spawn_turns) > 3:
+            last_interval = spawn_turns[-1] - spawn_turns[-2]
+            prev_interval = spawn_turns[-2] - spawn_turns[-3]
+            interval_increase = last_interval - prev_interval
+            next_interval = last_interval + interval_increase
+            next_spawn_turn = spawn_turns[-1] + next_interval
+            
+            gamelib.debug_write(next_spawn_turn)
+    
+    def calculate_pred_spawns(self, game_state):  
         # calculate opponent theoretical spawns, for last game (before deploy phase of turn that this is for)
         opponent_all_edges = game_state.game_map.get_edge_locations(0) + game_state.game_map.get_edge_locations(1)
         #gamelib.debug_write(opponent_all_edges)
@@ -95,19 +137,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         gamelib.debug_write(self.predicted_opponent_spawns)
         gamelib.debug_write("actual opponent spawns")
         gamelib.debug_write(self.opponent_spawns)
-
-        # First, place/restore basic defenses
-        self.build_defences(game_state)
-        # Now build reactive defenses based on where the enemy scored
-        self.build_reactive_defense(game_state)
-        
-        if game_state.turn_number % 2 == 0:
-            game_state.attempt_spawn(SCOUT, [13, 0], 1000)
-            return
-
-        #build support cannon
-        self.build_support_cannon(game_state)
-
+    
     def build_defences(self, game_state):
         """
         Build basic defenses using hardcoded locations.
@@ -142,7 +172,6 @@ class AlgoStrategy(gamelib.AlgoCore):
             # Build turret one space above so that it doesn't block our own edge spawn locations
             build_location = [location[0], location[1]+1]
             game_state.attempt_spawn(TURRET, build_location)
-
 
     def least_damage_spawn_location(self, game_state, location_options):
         """
