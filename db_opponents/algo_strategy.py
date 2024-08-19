@@ -45,7 +45,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.scored_on_locations = []
         self.opponent_spawns = []
         self.predicted_opponent_spawns = []
-        self.printed = True
+        self.logged = True
 
     def on_turn(self, turn_state):
         """
@@ -76,6 +76,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         For offense we will use long range demolishers if they place stationary units near the enemy's front.
         If there are no stationary units to attack in the front, we will send Scouts to try and score quickly.
         """
+        self.logged = True
+        
         # calculate opponent theoretical spawns, for last game (before deploy phase of turn that this is for)
         opponent_all_edges = game_state.game_map.get_edge_locations(0) + game_state.game_map.get_edge_locations(1)
         #gamelib.debug_write(opponent_all_edges)
@@ -202,7 +204,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         events = state["events"]
         turninfo = state["turnInfo"]
         # check deploy phase to identify spawn locations
-        if self.printed:
+        if self.logged:
             opponent_stats = state["p2Units"]
             opponent_units = {
                 "scouts": opponent_stats[3],
@@ -212,9 +214,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             #gamelib.debug_write("turn {}".format(turnInfo[1]))
             #gamelib.debug_write("actual opponent spawns")
             self.opponent_spawns.append(opponent_units)
-            self.printed = False
-        
-        self.printed = True
+            self.logged = False
         
         breaches = events["breach"]
         for breach in breaches:
