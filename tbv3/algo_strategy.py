@@ -112,23 +112,25 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.attempt_upgrade(wall_after)
 
     def build_up_defenses(self, game_state):
-        turret_locs = [[3, 12], [5, 12], [9, 12], [11, 12], [16, 12], [18, 12], [22, 12], [24, 12]]
+        turret_locs = [[3, 12], [11, 12], [24, 12], [5, 12], [16, 12], [9, 12], [18, 12], [22, 12]]
         wall_locs = [[3, 13], [24, 13], [9, 13], [18, 13]]
 
         wall_count = 0
-        for i, turr in enumerate(turret_locs):
+        for turr in turret_locs:
             game_state.attempt_spawn(TURRET, [turr])
             game_state.attempt_upgrade([turr])
 
-            if wall_locs[wall_count][0] == turr[0]:
+            if wall_count < len(wall_locs)-1 and wall_locs[wall_count][0] == turr[0]:
                 game_state.attempt_spawn(WALL, [wall_locs[wall_count]])
                 game_state.attempt_upgrade([wall_locs[wall_count]])
                 wall_count += 1
         
-        # spawn remainding walls
-        game_state.attempt_spawn(WALL, wall_locs)
-        game_state.attempt_upgrade(wall_locs)
+        left_edge_walls = [[0,13], [1,13], [2,13]]
+        right_edge_walls = [[27,13], [26,13], [25,13]]
 
+        for pair in zip(left_edge_walls, right_edge_walls):
+            game_state.attempt_spawn(WALL, [pair[0], pair[1]])
+            game_state.attempt_upgrade([pair[0], pair[1]])
 
 
 
