@@ -47,7 +47,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.predicted_opponent_spawns = []
         # self.opponent_MP = 0
         self.opponent_freq = []
-        # self.current_turn = 0
+        self.current_turn = 0
         self.logged = True
 
     def on_turn(self, turn_state):
@@ -80,18 +80,20 @@ class AlgoStrategy(gamelib.AlgoCore):
         If there are no stationary units to attack in the front, we will send Scouts to try and score quickly.
         """
         self.logged = True
-        self.predict_opponent_attack(game_state)
-        # First, place/restore basic defenses
+
         self.build_defences(game_state)
-        # Now build reactive defenses based on where the enemy scored
-        self.build_reactive_defense(game_state)
+
+        build_walls = self.predict_opponent_attack(game_state)
+        if build_walls:
+            self.build_blocking_walls(game_state)
+        
+        self.upgrade_defences(game_state)
+        
+        #self.build_support_cannon(game_state)
         
         if game_state.turn_number % 2 == 0:
             game_state.attempt_spawn(SCOUT, [13, 0], 1000)
             return
-
-        #build support cannon
-        self.build_support_cannon(game_state)
 
     def predict_opponent_attack(self, game_state):
         #get latest spawn info
@@ -104,20 +106,19 @@ class AlgoStrategy(gamelib.AlgoCore):
         else:
             self.opponent_freq.append(0)
         gamelib.debug_write(self.opponent_freq)
-
-        attack_next = False
         
         spawn_turns = [i for i, spawn in enumerate(self.opponent_freq) if spawn > 0]
         #gamelib.debug_write(spawn_turns)
-    
-        if len(spawn_turns) > 3:
-            last_interval = spawn_turns[-1] - spawn_turns[-2]
-            prev_interval = spawn_turns[-2] - spawn_turns[-3]
-            interval_increase = last_interval - prev_interval
-            next_interval = last_interval + interval_increase
-            next_spawn_turn = spawn_turns[-1] + next_interval
-            
+        if len(spawn_turns) > 1:
+            intervals = [spawn_turns[i+1] - spawn_turns[i] for i in range(len(spawn_turns)-1)]
+            avg_interval = sum(intervals) / len(intervals)
+            next_spawn_turn = spawn_turns[-1] + round(avg_interval)
             gamelib.debug_write(next_spawn_turn)
+            gamelib.debug_write(self.current_turn)
+            if self.current_turn + 2 == next_spawn_turn:
+                return True
+        return False
+    
     
     def calculate_pred_spawns(self, game_state):  
         # calculate opponent theoretical spawns, for last game (before deploy phase of turn that this is for)
@@ -138,22 +139,33 @@ class AlgoStrategy(gamelib.AlgoCore):
         gamelib.debug_write("actual opponent spawns")
         gamelib.debug_write(self.opponent_spawns)
     
+    def build_blocking_walls(self, game_state):
+        gamelib.debug_write("building blocking walls")
+        wall_locs = [[0,13],[1,13],[2,13],[3,13],[24,13],[25,13],[26,13],[27,13]]
+        game_state.attempt_spawn(WALL, wall_locs)
+        game_state.attempt_remove(wall_locs)
+    
     def build_defences(self, game_state):
         """
         Build basic defenses using hardcoded locations.
         Remember to defend corners and avoid placing units in the front where enemy demolishers can attack them.
         """
-        # Useful tool for setting up your base locations: https://www.kevinbai.design/terminal-map-maker
-        # More community tools available at: https://terminal.c1games.com/rules#Download
 
         # Place turrets that attack enemy units
         turret_locations = [[4, 12], [9, 12], [17, 12], [23, 12]]
         # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
         game_state.attempt_spawn(TURRET, turret_locations)
-        
-        upgrade_turret_locations = [[4, 12], [17, 12]]
-        game_state.attempt_upgrade(upgrade_turret_locations)
+        game_state.attempt_upgrade(turret_locations)
 
+    def upgrade_defences(self,game_state):
+        turret_locs = [[3, 12], [11, 12], [24, 12], [5, 12], [16, 12], [9, 12], [18, 12], [22, 12]]
+        for turr in turret_locs:
+            gamelib.debug_write(game_state.get_resources)
+            if game_state.get_resources(0)[0] < 16:
+                break
+            game_state.attempt_spawn(TURRET, [turr])
+            game_state.attempt_upgrade([turr])
+    
     def build_support_cannon(self, game_state):
         '''
         Build support diagonal to buff mobile units
@@ -243,6 +255,9 @@ class AlgoStrategy(gamelib.AlgoCore):
             #gamelib.debug_write("turn {}".format(turnInfo[1]))
             #gamelib.debug_write("actual opponent spawns")
             self.opponent_spawns.append(opponent_units)
+
+            self.current_turn = turninfo[1]
+
             self.logged = False
         
         breaches = events["breach"]
@@ -254,8 +269,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             if not unit_owner_self:
                 #gamelib.debug_write("Got scored on at: {}".format(location))
                 self.scored_on_locations.append(location)
-                #gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
-            
+                #gamelib.debug_write("All locations: {}".format(self.scored_on_locations))    
 
 
 if __name__ == "__main__":
