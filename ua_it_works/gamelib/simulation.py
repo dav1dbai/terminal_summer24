@@ -143,4 +143,3 @@ class Simulation():
             if not game_state.contains_stationary_unit(location):
                 filtered.append(location)
         return filtered
-
