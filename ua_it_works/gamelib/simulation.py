@@ -14,7 +14,7 @@ class Simulation():
 
     def __init__(self, game_state):
         self.orig_game = game_state
-        self.copy_game = GameState(copy.deepcopy(self.orig_game.config), copy.deepcopy(self.orig_game.serialized_string))
+        self.copy_game = GameState(self.orig_game.config, self.orig_game.serialized_string)
         self.supports = set()
 
         
@@ -68,7 +68,7 @@ class Simulation():
         damage_inflicted += turn['net_damage']
 
         damage_to_opponent_health = len(self.copy_game.game_map[current])
-        self.copy_game = GameState(copy.deepcopy(self.orig_game.config), copy.deepcopy(self.orig_game.serialized_string))
+        self.copy_game = GameState(self.orig_game.config, self.orig_game.serialized_string)
         
         return (location, damage_afflicted, damage_inflicted, damage_to_opponent_health)
         
