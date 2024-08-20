@@ -26,6 +26,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         random.seed(seed)
         gamelib.debug_write('Random seed: {}'.format(seed))
 
+        # ADDED HERE TO SEND MOBILE UNITS AFTER WALLS BUILT
+        self.PREV_WALLS_BUILT = False
+        self.PUSH_NEXT = True
+
     def on_game_start(self, config):
         """ 
         Read in config and perform any initial setup here 
@@ -89,15 +93,20 @@ class AlgoStrategy(gamelib.AlgoCore):
         build_walls = self.predict_opponent_attack(game_state)
         if build_walls and game_state.get_resources(0)[0] > 12:
             self.build_blocking_walls(game_state)
+        self.PREV_WALLS_BUILT = build_walls
         # 4. add vertical turrets in the middle
         self.end_game_defenses(game_state)
         
-        # self.upgrade_defences(game_state)
-        #self.build_support_cannon(game_state)
-        
-        if game_state.turn_number % 3 == 0:
-            game_state.attempt_spawn(SCOUT, [13, 0], 1000)
-            return
+        if game_state.turn_number % 3 == 0:    # WORK HERE if build walls, push right after
+            if not self.PREV_WALLS_BUILT or self.PUSH_NEXT:
+                if game_state.turn_number % 2 == 0:
+                    game_state.attempt_spawn(SCOUT, [13, 0], 1000)
+                else:
+                    game_state.attempt_spawn(SCOUT, [14, 0], 1000)
+                self.PUSH_NEXT = False
+            else:
+                self.PUSH_NEXT = True
+
 
     def predict_opponent_attack(self, game_state):
         #get latest spawn info
@@ -208,26 +217,6 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         game_state.attempt_spawn(TURRET, turret_locs)
         game_state.attempt_upgrade(turret_locs)
-
-    
-    def build_support_cannon(self, game_state):
-        '''
-        Build support diagonal to buff mobile units
-        '''
-        for x in range(13,22):
-            y = x - 12
-            game_state.attempt_spawn(SUPPORT, [x, y])
-
-    def build_reactive_defense(self, game_state):
-        """
-        This function builds reactive defenses based on where the enemy scored on us from.
-        We can track where the opponent scored by looking at events in action frames 
-        as shown in the on_action_frame function
-        """
-        for location in self.scored_on_locations:
-            # Build turret one space above so that it doesn't block our own edge spawn locations
-            build_location = [location[0], location[1]+1]
-            game_state.attempt_spawn(TURRET, build_location)
 
     def least_damage_spawn_location(self, game_state, location_options):
         """
