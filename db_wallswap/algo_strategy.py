@@ -80,18 +80,22 @@ class AlgoStrategy(gamelib.AlgoCore):
         If there are no stationary units to attack in the front, we will send Scouts to try and score quickly.
         """
         self.logged = True
-
-        self.build_defences(game_state)
-
+        # <<<< DEFENSE PRIORITY LIST >>>>
+        # 1. (re)build basic structs
+        self.starter_defenses(game_state)
+        # 2. (re)build extended structs
+        self.build_up_defenses(game_state)
+        # 3. (if resources) confuse opponents given prediction
         build_walls = self.predict_opponent_attack(game_state)
-        if build_walls:
+        if build_walls and game_state.get_resources(0)[0] > 12:
             self.build_blocking_walls(game_state)
+        # 4. add vertical turrets in the middle
+        self.end_game_defenses(game_state)
         
-        self.upgrade_defences(game_state)
-        
+        # self.upgrade_defences(game_state)
         #self.build_support_cannon(game_state)
         
-        if game_state.turn_number % 2 == 0:
+        if game_state.turn_number % 3 == 0:
             game_state.attempt_spawn(SCOUT, [13, 0], 1000)
             return
 
@@ -141,30 +145,70 @@ class AlgoStrategy(gamelib.AlgoCore):
     
     def build_blocking_walls(self, game_state):
         gamelib.debug_write("building blocking walls")
-        wall_locs = [[0,13],[1,13],[2,13],[3,13],[24,13],[25,13],[26,13],[27,13]]
+        wall_locs = [[0,13],[27,13],[1,13],[26,13],[2,13],[25,13],[3,13],[24,13]]   # could be improved, if turrets > 1 only need 3 each side
         game_state.attempt_spawn(WALL, wall_locs)
         game_state.attempt_remove(wall_locs)
     
-    def build_defences(self, game_state):
+    def starter_defenses(self, game_state):
         """
         Build basic defenses using hardcoded locations.
         Remember to defend corners and avoid placing units in the front where enemy demolishers can attack them.
         """
 
         # Place turrets that attack enemy units
-        turret_locations = [[4, 12], [9, 12], [17, 12], [23, 12]]
         # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
-        game_state.attempt_spawn(TURRET, turret_locations)
-        game_state.attempt_upgrade(turret_locations)
+        turret_locs = [[4, 12], [10, 12], [17, 12], [23, 12]]
+        support_locs = [[13, 2]]
+        wall_locs = [[4, 13], [17, 13]]
 
-    def upgrade_defences(self,game_state):
-        turret_locs = [[3, 12], [11, 12], [24, 12], [5, 12], [16, 12], [9, 12], [18, 12], [22, 12]]
+        game_state.attempt_spawn(TURRET, turret_locs)
+        game_state.attempt_upgrade(turret_locs)
+        
+        game_state.attempt_spawn(WALL, wall_locs)
+        game_state.attempt_upgrade(wall_locs)
+        
+        game_state.attempt_spawn(SUPPORT, support_locs)
+
+        wall_after = [[10, 13], [23, 13]]
+        game_state.attempt_spawn(WALL, wall_after)
+        game_state.attempt_upgrade(wall_after)
+
+    # def upgrade_defences(self,game_state):
+    #     turret_locs = [[3, 12], [11, 12], [24, 12], [5, 12], [16, 12], [9, 12], [18, 12], [22, 12]]
+    #     for turr in turret_locs:
+    #         gamelib.debug_write(game_state.get_resources)
+    #         if game_state.get_resources(0)[0] < 16:
+    #             break
+    #         game_state.attempt_spawn(TURRET, [turr])
+    #         game_state.attempt_upgrade([turr])
+    
+    def build_up_defenses(self, game_state):
+        turret_locs = [[3, 12], [24, 12], [5, 12], [9, 12], [18, 12], [22, 12]]
+        wall_locs = [[3, 13], [24, 13], [9, 13], [18, 13]]
+
+        wall_count = 0
         for turr in turret_locs:
-            gamelib.debug_write(game_state.get_resources)
-            if game_state.get_resources(0)[0] < 16:
-                break
             game_state.attempt_spawn(TURRET, [turr])
             game_state.attempt_upgrade([turr])
+
+            if wall_count < len(wall_locs)-1 and wall_locs[wall_count][0] == turr[0]:
+                game_state.attempt_spawn(WALL, [wall_locs[wall_count]])
+                game_state.attempt_upgrade([wall_locs[wall_count]])
+                wall_count += 1
+        
+        left_edge_walls = [[0,13], [1,13], [2,13]]
+        right_edge_walls = [[27,13], [26,13], [25,13]]
+
+        for pair in zip(left_edge_walls, right_edge_walls):
+            game_state.attempt_spawn(WALL, [pair[0], pair[1]])
+            game_state.attempt_upgrade([pair[0], pair[1]])
+
+    def end_game_defenses(self, game_state):
+        turret_locs = [[9, 11], [18, 11], [4, 11], [23, 11]]
+
+        game_state.attempt_spawn(TURRET, turret_locs)
+        game_state.attempt_upgrade(turret_locs)
+
     
     def build_support_cannon(self, game_state):
         '''
