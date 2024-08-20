@@ -77,35 +77,35 @@ class AlgoStrategy(gamelib.AlgoCore):
     """
 
     def starter_strategy(self, game_state):
-        """
-        For defense we will use a spread out layout and some interceptors early on.
-        We will place turrets near locations the opponent managed to score on.
-        For offense we will use long range demolishers if they place stationary units near the enemy's front.
-        If there are no stationary units to attack in the front, we will send Scouts to try and score quickly.
-        """
         self.logged = True
-        # <<<< DEFENSE PRIORITY LIST >>>>
-        # 1. (re)build basic structs
-        self.starter_defenses(game_state)
-        # 2. (re)build extended structs
-        self.build_up_defenses(game_state)
-        # 3. (if resources) confuse opponents given prediction
-        build_walls = self.predict_opponent_attack(game_state)
-        if build_walls and game_state.get_resources(0)[0] > 12:
-            self.build_blocking_walls(game_state)
-        self.PREV_WALLS_BUILT = build_walls
-        # 4. add vertical turrets in the middle
-        self.end_game_defenses(game_state)
+        # # <<<< DEFENSE PRIORITY LIST >>>>
+        # # 1. (re)build basic structs
+        # self.starter_defenses(game_state)
+        # # 2. (re)build extended structs
+        # self.build_up_defenses(game_state)
+        # # 3. (if resources) confuse opponents given prediction
+        # build_walls = self.predict_opponent_attack(game_state)
+        # if build_walls and game_state.get_resources(0)[0] > 12:
+        #     self.build_blocking_walls(game_state)
+        # self.PREV_WALLS_BUILT = build_walls
+        # # 4. add vertical turrets in the middle
+        # self.end_game_defenses(game_state)
         
-        if game_state.turn_number % 3 == 0:    # WORK HERE if build walls, push right after
-            if not self.PREV_WALLS_BUILT or self.PUSH_NEXT:
-                if game_state.turn_number % 2 == 0:
-                    game_state.attempt_spawn(SCOUT, [13, 0], 1000)
-                else:
-                    game_state.attempt_spawn(SCOUT, [14, 0], 1000)
-                self.PUSH_NEXT = False
-            else:
-                self.PUSH_NEXT = True
+        # if game_state.turn_number % 3 == 0:    # WORK HERE if build walls, push right after
+        #     if not self.PREV_WALLS_BUILT or self.PUSH_NEXT:
+        #         if game_state.turn_number % 2 == 0:
+        #             game_state.attempt_spawn(SCOUT, [13, 0], 1000)
+        #         else:
+        #             game_state.attempt_spawn(SCOUT, [14, 0], 1000)
+        #         self.PUSH_NEXT = False
+        #     else:
+        #         self.PUSH_NEXT = True
+
+        #flow
+        #rebuild turrets > this is priority
+        #restore walls
+        #determine next attack, and mark walls for deletion
+        #if remaining points, add reinforcement turrets
 
 
     def predict_opponent_attack(self, game_state):
@@ -163,7 +163,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         Build basic defenses using hardcoded locations.
         Remember to defend corners and avoid placing units in the front where enemy demolishers can attack them.
         """
-
         # Place turrets that attack enemy units
         # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
         turret_locs = [[4, 12], [10, 12], [17, 12], [23, 12]]

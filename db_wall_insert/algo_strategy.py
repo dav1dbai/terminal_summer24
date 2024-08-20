@@ -155,8 +155,8 @@ class AlgoStrategy(gamelib.AlgoCore):
     def build_blocking_walls(self, game_state):
         gamelib.debug_write("building blocking walls")
         wall_locs = [[0,13],[27,13],[1,13],[26,13],[2,13],[25,13],[3,13],[24,13]]   # could be improved, if turrets > 1 only need 3 each side
-        game_state.attempt_spawn(WALL, wall_locs)
-        game_state.attempt_remove(wall_locs)
+        game_state.attempt_spawn(TURRET, wall_locs)
+        # game_state.attempt_remove(wall_locs)
     
     def starter_defenses(self, game_state):
         """
@@ -208,9 +208,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         left_edge_walls = [[0,13], [1,13], [2,13]]
         right_edge_walls = [[27,13], [26,13], [25,13]]
 
-        for pair in zip(left_edge_walls, right_edge_walls):
-            game_state.attempt_spawn(WALL, [pair[0], pair[1]])
-            game_state.attempt_upgrade([pair[0], pair[1]])
+        # for pair in zip(left_edge_walls, right_edge_walls):
+        #     game_state.attempt_spawn(WALL, [pair[0], pair[1]])
+        #     game_state.attempt_upgrade([pair[0], pair[1]])
 
     def end_game_defenses(self, game_state):
         turret_locs = [[9, 11], [18, 11], [4, 11], [23, 11]]
