@@ -14,7 +14,7 @@ class Simulation():
 
     def __init__(self, game_state):
         self.orig_game = game_state
-        self.copy_game = GameState(copy.deepcopy(self.orig_game.config), copy.deepcopy(self.orig_game.serialized_string))
+        self.copy_game = GameState(self.orig_game.config, self.orig_game.serialized_string)
         self.supports = set()
 
         
@@ -62,10 +62,15 @@ class Simulation():
                     previous_move_direction = path_finder.HORIZONTAL
                 self.move_units(current, next_move)
                 current = next_move
-
-        self.copy_game = GameState(copy.deepcopy(self.orig_game.config), copy.deepcopy(self.orig_game.serialized_string))
         
-        return (location, damage_afflicted, damage_inflicted, len(self.copy_game.game_map[current]))
+        turn = self.damage_calculations(current, 0, path_finder, location, end_points)
+        damage_afflicted += turn['target_damage']
+        damage_inflicted += turn['net_damage']
+
+        damage_to_opponent_health = len(self.copy_game.game_map[current])
+        self.copy_game = GameState(self.orig_game.config, self.orig_game.serialized_string)
+        
+        return (location, damage_afflicted, damage_inflicted, damage_to_opponent_health)
         
 
     def move_units(self, location_1, location_2):
@@ -138,4 +143,3 @@ class Simulation():
             if not game_state.contains_stationary_unit(location):
                 filtered.append(location)
         return filtered
-
