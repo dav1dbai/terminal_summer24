@@ -79,7 +79,10 @@ class AlgoStrategy(gamelib.AlgoCore):
                 game_state.attempt_spawn(SCOUT, location, resources_avail) 
                 attack = True
                 supp_location = location
-        
+        else:
+            game_state.attempt_spawn(SCOUT, [[27,13]], 10)
+            game_state.attempt_spawn(SUPPORT, [[26,12]])
+            game_state.attempt_remove([[26,12]])
         # DEFENSE STRATEGY
         self.strategy(game_state, attack, supp_location)
         gamelib.debug_write(f"build stack: {game_state._build_stack}")
@@ -88,7 +91,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     def to_attack(self, game_state, structure_damage, damage_to_opponent, points):
         # check win condition,
-        if damage_to_opponent>=game_state.enemy_health or damage_to_opponent>=points*0.6 or points>=14:       # PLAY AROUND WITH THIS OFFENSE
+        if damage_to_opponent>=game_state.enemy_health or damage_to_opponent>=points*0.325 or points>=14:       # PLAY AROUND WITH THIS OFFENSE
             return True
         return False
 
