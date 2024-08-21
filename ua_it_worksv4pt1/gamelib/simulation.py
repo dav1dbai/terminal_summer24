@@ -84,6 +84,7 @@ class Simulation():
         for unit in tuple(self.copy_game.game_map[location_1]):
             self.copy_game.game_map[location_2].append(unit)
             self.copy_game.game_map[location_1].pop(0)
+            unit.x,unit.y = location_2[0], location_2[1]
 
     def damage_calculations(self, location, player_index, nav, spawn_location, end_points):
         supports = self.copy_game.get_shielders(location, player_index)
