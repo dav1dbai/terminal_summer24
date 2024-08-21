@@ -72,12 +72,10 @@ class AlgoStrategy(gamelib.AlgoCore):
             sim = gamelib.Simulation(game_state)
             edges = game_state.game_map.get_edges()
             spawnable_edges = self.filter_blocked_locations(edges[2]+edges[3], game_state)
-            location = sim.best_attack_path(spawnable_edges, int(game_state.get_resources(0)[1]), self.config["unitInformation"][3]["shorthand"], 0)
-            gamelib.debug_write(f"location: {location}")
-            if int(game_state.get_resources(0)[1])>8:
-                a = 1
+            location, structure_damage, damage_taken, damage_to_opponent = sim.best_attack_path(spawnable_edges, int(game_state.get_resources(0)[1]), self.config["unitInformation"][3]["shorthand"], 0)
+            if self.to_attack(game_state,structure_damage, structure_damage, damage_to_opponent, int(game_state.get_resources(0)[1])):
                 game_state.attempt_spawn(SCOUT, location, int(game_state.get_resources(0)[1]))
-
+                
         game_state = gamelib.GameState(self.config, turn_state)
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
         
@@ -87,6 +85,10 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         game_state.submit_turn()
 
+    def to_attack(self, game_state, structure_damage, damage_to_opponent, points):
+        if damage_to_opponent>=game_state.enemy_health or damage_to_opponent>=points*0.35 or points>=11:
+            return True
+        return False
 
     """
     NOTE: All the methods after this point are part of the sample starter-algo

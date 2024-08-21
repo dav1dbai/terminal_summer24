@@ -30,7 +30,7 @@ class Simulation():
         # location = [13,0]
         # paths = [self.simulate_path(location, amount_of_troops, mobile_unit, player_index)]
 
-        return sorted(paths, key = lambda x: (x[-1], x[0]))[-1][0]
+        return sorted(paths, key = lambda x: (x[-1], x[0]))[-1]
         
     def simulate_path(self, location, amount_of_troops, unit_type, player_index):
         
@@ -79,7 +79,6 @@ class Simulation():
             self.copy_game.game_map[location_1].pop(0)
 
     def damage_calculations(self, location, player_index, nav, spawn_location, end_points):
-        print(f"running damage calcs on loc: {spawn_location}")
         print(len(self.copy_game.game_map[location]))
         supports = self.copy_game.get_shielders(location, player_index)
         attackers = self.copy_game.get_attackers(location, player_index)
