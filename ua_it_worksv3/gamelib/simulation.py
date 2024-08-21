@@ -37,8 +37,12 @@ class Simulation():
         """
         self.update_placements()
         paths = [self.simulate_path(location, amount_of_troops, mobile_unit, player_index) for location in self.get_attack_options(self.copy_game, player_index)]
+        # location = [13,0]
+        # paths = [self.simulate_path(location, amount_of_troops, mobile_unit, player_index)]
 
-        return sorted(paths, key = lambda x: (x[-1], x[0]))[-1]
+        gamelib.debug_write(f"attack_paths_k=3: {sorted(paths, key=lambda x: (x[3], -x[2], x[1]), reverse = True)[:3]}")
+
+        return sorted(paths, key=lambda x: (x[3], -x[2], x[1]), reverse = True)[0]
         
     def simulate_path(self, location, amount_of_troops, unit_type, player_index):
         
@@ -54,13 +58,13 @@ class Simulation():
         current = location
         self.supports = set()
 
-        damage_afflicted, damage_inflicted, previous_move_direction = 0, 0, 0
+        damage_given, damage_taken, previous_move_direction = 0, 0, 0
 
         while (not path_finder.game_map[current[0]][current[1]].pathlength == 0) and len(self.copy_game.game_map[current])>0:
 
             turn = self.damage_calculations(current, 0, path_finder, location, end_points)
-            damage_afflicted += turn['target_damage']
-            damage_inflicted += turn['net_damage']
+            damage_given += turn['target_damage']
+            damage_taken += turn['net_damage']
             if len(self.copy_game.game_map[current])>0:
                 
                 next_move = path_finder._choose_next_move(current, previous_move_direction, end_points)
@@ -73,13 +77,13 @@ class Simulation():
 
         if len(self.copy_game.game_map[current])>0:
             turn = self.damage_calculations(current, 0, path_finder, location, end_points)
-            damage_afflicted += turn['target_damage']
-            damage_inflicted += turn['net_damage']
+            damage_given += turn['target_damage']
+            damage_taken += turn['net_damage']
 
         damage_to_opponent_health = len(self.copy_game.game_map[current])
         self.copy_game = GameState(self.orig_game.config, self.orig_game.serialized_string)
         
-        return (location, damage_afflicted, damage_inflicted, damage_to_opponent_health)
+        return (location, damage_given, damage_taken, damage_to_opponent_health)
         
 
     def move_units(self, location_1, location_2):
