@@ -40,9 +40,9 @@ class Simulation():
         # location = [13,0]
         # paths = [self.simulate_path(location, amount_of_troops, mobile_unit, player_index)]
 
-        gamelib.debug_write(f"attack_paths_k=3: {sorted(paths, key=lambda x: (-x[2], x[1]), reverse = True)[:3]}")
+        gamelib.debug_write(f"attack_paths_k=3: {sorted(paths, key=lambda x: (x[3], -x[2], x[1]), reverse = True)[:3]}")
 
-        return sorted(paths, key=lambda x: (-x[2], x[1]), reverse = True)[0]
+        return sorted(paths, key=lambda x: (x[3], -x[2], x[1]), reverse = True)[0]
         
     def simulate_path(self, location, amount_of_troops, unit_type, player_index):
         
@@ -119,8 +119,9 @@ class Simulation():
             target.health-=target_damage
             if target.health<=0:
                 self.copy_game.game_map[[target.x,target.y]].pop()
-                nav.ideal_endpoints = nav._idealness_search(spawn_location, end_points)
-                nav._validate(nav.ideal_endpoints, end_points)
+                # COMMENTED OUT HERE
+                # nav.ideal_endpoints = nav._idealness_search(spawn_location, end_points)
+                # nav._validate(nav.ideal_endpoints, end_points)
 
         
         return {'net_damage': net_damage, 'target_damage': target_damage}

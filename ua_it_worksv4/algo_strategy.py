@@ -77,9 +77,12 @@ class AlgoStrategy(gamelib.AlgoCore):
             if self.to_attack(game_state,structure_damage,damage_to_opponent, int(game_state.get_resources(0)[1])):
                 # ADDS SUPPORT FOR OFFENSE
                 self.add_support(game_state, location)
-                if game_state.turn_number > 5:
+                # add second support
+                if game_state.turn_number > 15:
                     self.add_support(game_state, location)
-                game_state.attempt_spawn(SCOUT, location, int(game_state.get_resources(0)[1]))
+                
+                resources_avail = int(game_state.get_resources(0)[1])
+                game_state.attempt_spawn(SCOUT, location, resources_avail) 
             
         
         # DEFENSE STRATEGY
@@ -92,7 +95,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     def to_attack(self, game_state, structure_damage, damage_to_opponent, points):
         # check win condition,
-        if damage_to_opponent>=game_state.enemy_health or damage_to_opponent>=points*0.6 or points>=12:       # PLAY AROUND WITH THIS OFFENSE
+        if damage_to_opponent>=game_state.enemy_health or damage_to_opponent>=points*0.6 or points>=14:       # PLAY AROUND WITH THIS OFFENSE
             return True
         return False
 
@@ -108,8 +111,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                     break
 
         game_state.attempt_spawn(SUPPORT, support_loc)
-        # only if above y=7
-        # game_state.attempt_upgrade(support_loc)
+        # only if above y=7: game_state.attempt_upgrade(support_loc)
         game_state.attempt_remove(support_loc)
 
     """
@@ -121,15 +123,38 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         
         # @DAVID these are NOT reactive
-        self.start_defenses(game_state)
+        # self.start_defenses(game_state)
+        self.improved_defense(game_state)
 
         # @DAVID reactive defenses
-        self.reactive_defenses(game_state)
+        # self.reactive_defenses(game_state)
 
         # @DAVID building upon
-        self.build_up_defenses(game_state)
+        # self.build_up_defenses(game_state)
 
         
+    def improved_defense(self, game_state):
+        # clusters
+        left = [[4, 13], [5, 13], [3, 13], [6, 13]]
+        middle = [[13, 13], [13, 12], [14, 13], [14, 12]]
+        right = [[23, 13], [22, 13], [24, 13], [25, 13]]
+
+        priority_one = []
+        priority_one.extend(left[:2])
+        priority_one.extend(middle[:1])
+        priority_one.extend(right[:2])
+
+        game_state.attempt_spawn(TURRET, priority_one)
+        game_state.attempt_upgrade(priority_one)
+
+        # test pushing support here
+
+        priority_two = []
+        priority_two.extend([middle[1], left[2], right[2], middle[2], middle[3], left[3], right[3]])
+        
+        game_state.attempt_spawn(TURRET, priority_two)
+        game_state.attempt_upgrade(priority_two)
+
 
 
     def start_defenses(self, game_state):
