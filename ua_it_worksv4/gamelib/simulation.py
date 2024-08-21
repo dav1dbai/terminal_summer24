@@ -35,7 +35,6 @@ class Simulation():
         It gets the path the unit will take then checks locations on that path to 
         estimate the path's damage risk.
         """
-        self.update_placements()
         paths = [self.simulate_path(location, amount_of_troops, mobile_unit, player_index) for location in self.get_attack_options(self.copy_game, player_index)]
         # location = [13,0]
         # paths = [self.simulate_path(location, amount_of_troops, mobile_unit, player_index)]
@@ -45,7 +44,7 @@ class Simulation():
         return sorted(paths, key=lambda x: (x[3], -x[2], x[1]), reverse = True)[0]
         
     def simulate_path(self, location, amount_of_troops, unit_type, player_index):
-        
+        self.update_placements()
         path_finder = ShortestPathFinder()
         path_finder.initialize_map(self.copy_game)
         target_edge = self.copy_game.get_target_edge(location)
@@ -61,19 +60,20 @@ class Simulation():
         damage_given, damage_taken, previous_move_direction = 0, 0, 0
 
         while (not path_finder.game_map[current[0]][current[1]].pathlength == 0) and len(self.copy_game.game_map[current])>0:
-
+            next_move = path_finder._choose_next_move(current, previous_move_direction, end_points)
+            if current[0] == next_move[0]:
+                previous_move_direction = path_finder.VERTICAL
+            else:
+                previous_move_direction = path_finder.HORIZONTAL
+            self.move_units(current, next_move)
+            current = next_move
+            
             turn = self.damage_calculations(current, 0, path_finder, location, end_points)
             damage_given += turn['target_damage']
             damage_taken += turn['net_damage']
-            if len(self.copy_game.game_map[current])>0:
+
                 
-                next_move = path_finder._choose_next_move(current, previous_move_direction, end_points)
-                if current[0] == next_move[0]:
-                    previous_move_direction = path_finder.VERTICAL
-                else:
-                    previous_move_direction = path_finder.HORIZONTAL
-                self.move_units(current, next_move)
-                current = next_move
+
 
         if len(self.copy_game.game_map[current])>0:
             turn = self.damage_calculations(current, 0, path_finder, location, end_points)
@@ -115,13 +115,16 @@ class Simulation():
             else:
                 total_damage -= self.copy_game.game_map[location][-1].health
                 self.copy_game.game_map[location].pop()
-        if target:
-            target.health-=target_damage
-            if target.health<=0:
-                self.copy_game.game_map[[target.x,target.y]].pop()
-                # COMMENTED OUT HERE
-                # nav.ideal_endpoints = nav._idealness_search(spawn_location, end_points)
-                # nav._validate(nav.ideal_endpoints, end_points)
+        while target and target_damage>0:
+            if target.health > target_damage:
+                target.health-=target_damage
+            else:
+                target_damage -= target.health
+                self.copy_game.game_map[[target.x, target.y]].pop()
+                target = self.copy_game.get_target(self.copy_game.game_map[location][0])
+            # COMMENTED OUT HERE
+            # nav.ideal_endpoints = nav._idealness_search(spawn_location, end_points)
+            # nav._validate(nav.ideal_endpoints, end_points)
 
         
         return {'net_damage': net_damage, 'target_damage': target_damage}
