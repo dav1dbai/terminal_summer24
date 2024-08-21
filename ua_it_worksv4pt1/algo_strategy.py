@@ -83,10 +83,6 @@ class AlgoStrategy(gamelib.AlgoCore):
                 
                 resources_avail = int(game_state.get_resources(0)[1])
                 game_state.attempt_spawn(SCOUT, location, resources_avail)
-        else:
-            game_state.attempt_spawn(SCOUT, [[27,13]], 10)
-            game_state.attempt_spawn(SUPPORT, [[26,12]])
-            game_state.attempt_remove([[26,12]])
             
         
         # DEFENSE STRATEGY
@@ -99,7 +95,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     def to_attack(self, game_state, structure_damage, damage_to_opponent, points):
         # check win condition,
-        if damage_to_opponent>=game_state.enemy_health or damage_to_opponent>=points*0.325 or points>=14:       # PLAY AROUND WITH THIS OFFENSE
+        if damage_to_opponent>=game_state.enemy_health or (damage_to_opponent>=points*0.325 and damage_to_opponent>=2) or points>=14:       # PLAY AROUND WITH THIS OFFENSE
             return True
         return False
 
@@ -129,6 +125,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         # @DAVID these are NOT reactive
         # self.start_defenses(game_state)
         self.improved_defense(game_state)
+        # self.defense_2(game_state)
 
         # @DAVID reactive defenses
         # self.reactive_defenses(game_state)
@@ -140,25 +137,48 @@ class AlgoStrategy(gamelib.AlgoCore):
     def improved_defense(self, game_state):
         # clusters
         left = [[3, 13], [4, 13], [2, 13], [5, 13]]
-        middle = [[13, 13], [13, 12], [14, 13], [14, 12]]
+        middle = [[13, 13], [14, 13], [14, 12], [13, 12]]
         right = [[23, 13], [22, 13], [24, 13], [25, 13]]
 
         priority_one = []
         priority_one.extend(left[:2])
-        priority_one.extend(middle[:1])
         priority_one.extend(right[:2])
+        priority_one.extend(middle[:2])
 
-        game_state.attempt_spawn(TURRET, priority_one)
-        game_state.attempt_upgrade(priority_one)
+        for loc in priority_one:
+            game_state.attempt_spawn(TURRET, loc)
+            game_state.attempt_upgrade(loc)
 
         # test pushing support here
 
         priority_two = []
-        priority_two.extend([middle[1], left[2], right[2], middle[2], middle[3], left[3], right[3]])
+        priority_two.extend([middle[2], left[2], right[2], middle[3], left[3], right[3]])
         
-        game_state.attempt_spawn(TURRET, priority_two)
-        game_state.attempt_upgrade(priority_two)
+        for loc in priority_two:
+            game_state.attempt_spawn(TURRET, loc)
+            game_state.attempt_upgrade(loc)
 
+    def defense_2(self, game_state):
+        left = [[4,12], [3,12], [5,12]]
+        middle_left = [[10,12], [9,12], [11,12]]
+        middle_right = [[17,12], [18,12], [16,12]]
+        right = [[23,12], [24,12], [22,12]]
+
+        priority_one = [left[0], middle_left[0], middle_right[0], right[0]]
+        priority_two = [left[1], right[1], middle_left[1], middle_right[1]]
+        priority_three = [middle_left[2], middle_right[2], left[2], right[2]]
+
+        for loc in priority_one:
+            game_state.attempt_spawn(TURRET, loc)
+            game_state.attempt_upgrade(loc)
+
+        for loc in priority_two:
+            game_state.attempt_spawn(TURRET, loc)
+            game_state.attempt_upgrade(loc)
+
+        for loc in priority_three:
+            game_state.attempt_spawn(TURRET, loc)
+            game_state.attempt_upgrade(loc)
 
 
     def start_defenses(self, game_state):
