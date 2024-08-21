@@ -18,14 +18,24 @@ class Simulation():
         self.supports = set()
 
         
-        
+    def update_placements(self):
+        UPGRADE = self.orig_game.config["unitInformation"][7]["shorthand"]
+        for name, x, y in self.orig_game._build_stack:
+            if name == UPGRADE:
+                self.copy_game.game_map[[x,y]][0].upgrade()
+            else:
+                self.copy_game.game_map.add_unit(name, [x,y], 0)
+    
+
+
+
     def best_attack_path(self, location_options, amount_of_troops, mobile_unit, player_index):
         """
         This function will help us guess which location is the safest to spawn moving units from.
         It gets the path the unit will take then checks locations on that path to 
         estimate the path's damage risk.
         """
-        gamelib.debug_write('getting best attack path')
+        self.update_placements()
         paths = [self.simulate_path(location, amount_of_troops, mobile_unit, player_index) for location in self.get_attack_options(self.copy_game, player_index)]
         # location = [13,0]
         # paths = [self.simulate_path(location, amount_of_troops, mobile_unit, player_index)]
@@ -48,7 +58,7 @@ class Simulation():
 
         damage_afflicted, damage_inflicted, previous_move_direction = 0, 0, 0
 
-        while not(path_finder.game_map[current[0]][current[1]].pathlength == 0) and len(self.copy_game.game_map[current])>0:
+        while (not path_finder.game_map[current[0]][current[1]].pathlength == 0) and len(self.copy_game.game_map[current])>0:
 
             turn = self.damage_calculations(current, 0, path_finder, location, end_points)
             damage_afflicted += turn['target_damage']
@@ -62,10 +72,11 @@ class Simulation():
                     previous_move_direction = path_finder.HORIZONTAL
                 self.move_units(current, next_move)
                 current = next_move
-        
-        turn = self.damage_calculations(current, 0, path_finder, location, end_points)
-        damage_afflicted += turn['target_damage']
-        damage_inflicted += turn['net_damage']
+
+        if len(self.copy_game.game_map[current])>0:
+            turn = self.damage_calculations(current, 0, path_finder, location, end_points)
+            damage_afflicted += turn['target_damage']
+            damage_inflicted += turn['net_damage']
 
         damage_to_opponent_health = len(self.copy_game.game_map[current])
         self.copy_game = GameState(self.orig_game.config, self.orig_game.serialized_string)
@@ -79,7 +90,6 @@ class Simulation():
             self.copy_game.game_map[location_1].pop(0)
 
     def damage_calculations(self, location, player_index, nav, spawn_location, end_points):
-        print(len(self.copy_game.game_map[location]))
         supports = self.copy_game.get_shielders(location, player_index)
         attackers = self.copy_game.get_attackers(location, player_index)
         net_damage = 0 

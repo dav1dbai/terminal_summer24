@@ -67,17 +67,26 @@ class AlgoStrategy(gamelib.AlgoCore):
         gamelib.debug_write('Performing turn {} of your custom algo strategy'.format(game_state.turn_number))
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
         
+
         
         if game_state.turn_number > 1:
             sim = gamelib.Simulation(game_state)
             edges = game_state.game_map.get_edges()
             spawnable_edges = self.filter_blocked_locations(edges[2]+edges[3], game_state)
-            location, structure_damage, damage_taken, damage_to_opponent = sim.best_attack_path(spawnable_edges, int(game_state.get_resources(0)[1]), self.config["unitInformation"][3]["shorthand"], 0)
-            if self.to_attack(game_state,structure_damage, structure_damage, damage_to_opponent, int(game_state.get_resources(0)[1])):
+            location = sim.best_attack_path(spawnable_edges, int(game_state.get_resources(0)[1]), self.config["unitInformation"][3]["shorthand"], 0)
+            gamelib.debug_write(f"location: {location}")
+            if int(game_state.get_resources(0)[1])>8:
+                a = 1
                 game_state.attempt_spawn(SCOUT, location, int(game_state.get_resources(0)[1]))
-                
+
         game_state = gamelib.GameState(self.config, turn_state)
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
+
+        spawn_interceptor = self.interceptor_defense(game_state)
+        
+        
+        if spawn_interceptor:
+            game_state.attempt_spawn(INTERCEPTOR, spawn_interceptor)
         
 
         self.basic_layering(game_state)
@@ -85,10 +94,6 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         game_state.submit_turn()
 
-    def to_attack(self, game_state, structure_damage, damage_to_opponent, points):
-        if damage_to_opponent>=game_state.enemy_health or damage_to_opponent>=points*0.35 or points>=11:
-            return True
-        return False
 
     """
     NOTE: All the methods after this point are part of the sample starter-algo
@@ -134,6 +139,52 @@ class AlgoStrategy(gamelib.AlgoCore):
             if not game_state.contains_stationary_unit(location):
                 filtered.append(location)
         return filtered
+    
+    def interceptor_defense(self, game_state):
+        # get possible spawn locs
+        enemy_spawns = []
+        enemy_spawns.extend(game_state.game_map.get_edge_locations(game_state.game_map.TOP_RIGHT))
+        enemy_spawns.extend(game_state.game_map.get_edge_locations(game_state.game_map.TOP_LEFT))
+        enemy_spawns = self.filter_blocked_locations(enemy_spawns, game_state)
+        
+        # look for most likely
+        likely_location = self.least_damage_spawn_location_enemy(game_state, enemy_spawns)
+        # get end path of that one
+        enemy_end_path = game_state.find_path_to_edge(likely_location)
+        
+        x_list = [p[0] for p in enemy_end_path if p[1] in [8, 9, 10, 11, 12]]
+        y_list = [p[1] for p in enemy_end_path if p[1] in [8, 9, 10, 11, 12]]
+
+        if not x_list:
+            return None     # no intersection path possible
+        
+        # avg the x, y traversal where interceptor can (probably) fight off
+        avg_x = sum(x_list)//len(x_list)
+        avg_y = sum(y_list)//len(y_list)
+
+        # find start for interceptor to reach avg x, avg y
+        hypothetical_path_to_enemy = game_state.find_path_to_edge([avg_x, avg_y])
+
+        gamelib.debug_write(f"add interceptor at: {hypothetical_path_to_enemy}") 
+        gamelib.debug_write(f"add interceptor at [0]: {hypothetical_path_to_enemy[0]}") 
+        
+        return hypothetical_path_to_enemy[0]
+
+
+
+    def least_damage_spawn_location_enemy(self, game_state, location_options):
+        damages = []
+        for location in location_options:
+            path = game_state.find_path_to_edge(location)
+            damage = 0
+            for path_location in path:
+                # Get number of ally turrets that can attack each location and multiply by turret damage
+                damage += sum([unit.damage_i for unit in game_state.get_attackers(path_location, 1)])
+                # damage += len(game_state.get_attackers(path_location, 1)) * gamelib.GameUnit(TURRET, game_state.config).damage_i
+            damages.append(damage)
+        
+        # Now just return the location that takes the least damage
+        return location_options[damages.index(min(damages))]
 
     def on_action_frame(self, turn_string):
         """
