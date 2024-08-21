@@ -68,7 +68,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
         
         
-        # OFFENSE
+        
         if game_state.turn_number > 1:
             sim = gamelib.Simulation(game_state)
             edges = game_state.game_map.get_edges()
@@ -77,12 +77,16 @@ class AlgoStrategy(gamelib.AlgoCore):
             if self.to_attack(game_state,structure_damage,damage_to_opponent, int(game_state.get_resources(0)[1])):
                 # ADDS SUPPORT FOR OFFENSE
                 self.add_support(game_state, location)
-                # add second support
-                if game_state.turn_number > 15:
-                    self.add_support(game_state, location)
+                # COMMENTED OUT add second support
+                # if game_state.turn_number > 15:
+                #     self.add_support(game_state, location)
                 
                 resources_avail = int(game_state.get_resources(0)[1])
-                game_state.attempt_spawn(SCOUT, location, resources_avail) 
+                game_state.attempt_spawn(SCOUT, location, resources_avail)
+        else:
+            game_state.attempt_spawn(SCOUT, [[27,13]], 10)
+            game_state.attempt_spawn(SUPPORT, [[26,12]])
+            game_state.attempt_remove([[26,12]])
             
         
         # DEFENSE STRATEGY
@@ -135,7 +139,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         
     def improved_defense(self, game_state):
         # clusters
-        left = [[4, 13], [5, 13], [3, 13], [6, 13]]
+        left = [[3, 13], [4, 13], [2, 13], [5, 13]]
         middle = [[13, 13], [13, 12], [14, 13], [14, 12]]
         right = [[23, 13], [22, 13], [24, 13], [25, 13]]
 
