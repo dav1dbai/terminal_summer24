@@ -91,7 +91,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     def to_attack(self, game_state, structure_damage, damage_to_opponent, points):
         # check win condition,
-        if damage_to_opponent>=game_state.enemy_health or damage_to_opponent>=points*0.325 or points>=14:       # PLAY AROUND WITH THIS OFFENSE
+        if damage_to_opponent>=game_state.enemy_health or (damage_to_opponent>=points*0.325 and damage_to_opponent>=3) or points>=14:  # PLAY AROUND WITH THIS OFFENSE
             return True
         return False
 
