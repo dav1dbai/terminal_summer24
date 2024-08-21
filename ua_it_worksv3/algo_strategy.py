@@ -68,22 +68,19 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
         
         
-        
+        # OFFENSE
         if game_state.turn_number > 1:
             sim = gamelib.Simulation(game_state)
             edges = game_state.game_map.get_edges()
             spawnable_edges = self.filter_blocked_locations(edges[2]+edges[3], game_state)
             location, structure_damage, damage_taken, damage_to_opponent = sim.best_attack_path(spawnable_edges, int(game_state.get_resources(0)[1]), self.config["unitInformation"][3]["shorthand"], 0)
             if self.to_attack(game_state,structure_damage,damage_to_opponent, int(game_state.get_resources(0)[1])):
+                # ADDS SUPPORT FOR OFFENSE
                 self.add_support(game_state, location)
                 game_state.attempt_spawn(SCOUT, location, int(game_state.get_resources(0)[1]))
             
-            # interceptor_loc = self.interceptor_defense(game_state)
-            # if interceptor_loc:
-            #     game_state.attempt_spawn(INTERCEPTOR, location, 1)
-            #     gamelib.debug_write(f"interceptor: {interceptor_loc}")
         
-        # defenses
+        # DEFENSE STRATEGY
         self.strategy(game_state)
         gamelib.debug_write(f"build stack: {game_state._build_stack}")
 
@@ -93,12 +90,13 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     def to_attack(self, game_state, structure_damage, damage_to_opponent, points):
         # if damage_to_opponent>=game_state.enemy_health or damage_to_opponent>=points*0.6 or points>=12:
-        if damage_to_opponent>=game_state.enemy_health or points>=12:
+        if damage_to_opponent>=game_state.enemy_health or points>=12:       # PLAY AROUND WITH THIS OFFENSE
             return True
         return False
 
     def add_support(self, game_state, loc):
         
+        # @DAVID
         # IMPROVE SO THAT if above 7 y, just upgrade one turret instead of having two
         support_loc = None
         for i in range(-2, 2, 1):
@@ -120,10 +118,16 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         """
         
-        
+        # @DAVID these are NOT reactive
         self.start_defenses(game_state)
+
+        # @DAVID reactive defenses
+        self.reactive_defenses(game_state)
+
+        # @DAVID building upon
         self.build_up_defenses(game_state)
 
+        
 
 
     def start_defenses(self, game_state):
@@ -171,7 +175,31 @@ class AlgoStrategy(gamelib.AlgoCore):
             game_state.attempt_spawn(TURRET, [pair[0], pair[1]])
             game_state.attempt_upgrade([pair[0], pair[1]])
 
+    def reactive_defenses(self, game_state):
+        # get all possible enemy spawn locs
+        enemy_spawns = []
+        enemy_spawns.extend(game_state.game_map.get_edge_locations(game_state.game_map.TOP_RIGHT))
+        enemy_spawns.extend(game_state.game_map.get_edge_locations(game_state.game_map.TOP_LEFT))
+        enemy_spawns = self.filter_blocked_locations(enemy_spawns, game_state)
 
+        
+        # find most likely spawn loc + path
+        likely_location = self.least_damage_spawn_location_enemy(game_state, enemy_spawns)
+        enemy_end_path = game_state.find_path_to_edge(likely_location)
+        
+        # find x_avg that intersects with y=12 (our turret row)
+        x_list = [p[0] for p in enemy_end_path if p[1] == 12]
+
+        if not x_list:
+            return None     # no intersection path possible, no turret to place
+         
+        # avg the x, y traversal where interceptor can (probably) fight off
+        avg_x = sum(x_list)//len(x_list)
+
+        # @DAVID try to build turret spawner preference on the side of avg_x
+
+        
+        return True # or smth idk
 
     def build_support_cannon(self, game_state):
         '''
@@ -208,36 +236,6 @@ class AlgoStrategy(gamelib.AlgoCore):
                 filtered.append(location)
         return filtered
 
-    def interceptor_defense(self, game_state):
-        
-        # get all possible enemy spawn locs
-        enemy_spawns = []
-        enemy_spawns.extend(game_state.game_map.get_edge_locations(game_state.game_map.TOP_RIGHT))
-        enemy_spawns.extend(game_state.game_map.get_edge_locations(game_state.game_map.TOP_LEFT))
-        enemy_spawns = self.filter_blocked_locations(enemy_spawns, game_state)
-
-        
-        # find most likely spawn loc + path
-        likely_location = self.least_damage_spawn_location_enemy(game_state, enemy_spawns)
-        enemy_end_path = game_state.find_path_to_edge(likely_location)
-        
-        x_list = [p[0] for p in enemy_end_path if p[1] in [8, 9, 10, 11, 12]]
-        y_list = [p[1] for p in enemy_end_path if p[1] in [8, 9, 10, 11, 12]]
-
-        if not x_list:
-            return None     # no intersection path possible
-         
-        # avg the x, y traversal where interceptor can (probably) fight off
-        avg_x = sum(x_list)//len(x_list)
-        avg_y = sum(y_list)//len(y_list)
-        gamelib.debug_write(f"avg_x, avg_y: {avg_x}, {avg_y}")
-
-        # find start for interceptor to reach avg x, avg y
-        hypothetical_path_to_enemy = game_state.find_path_to_edge([avg_x, avg_y])
-
-        gamelib.debug_write(f"add inter. at[0]: {hypothetical_path_to_enemy[0]}") 
-        
-        return hypothetical_path_to_enemy[0]
     
     def least_damage_spawn_location_enemy(self,game_state,location_options):
         damages = []
