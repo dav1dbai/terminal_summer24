@@ -25,13 +25,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         random.seed(seed)
         gamelib.debug_write('Random seed: {}'.format(seed))
         self.friend_side = []
-        self.enemy_side = []
-        start,end = 13, 14
-        for i in range (14):
-            for j in range(start, end+1):
-                self.friend_side.append([i,j])
-            start-=1
-            end+=1
+        self.enemy_structures = []
+
         
         
 
@@ -99,7 +94,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
     def to_attack(self, game_state, structure_damage, damage_to_opponent, points):
         # check win condition,
-        if damage_to_opponent>=game_state.enemy_health or damage_to_opponent>=points*0.6 or points>=14:       # PLAY AROUND WITH THIS OFFENSE
+        if damage_to_opponent>=game_state.enemy_health or damage_to_opponent>0.55*points:       # PLAY AROUND WITH THIS OFFENSE
             return True
         return False
 
@@ -113,9 +108,13 @@ class AlgoStrategy(gamelib.AlgoCore):
                 support_loc = [loc[0] - i, loc[1] - j]
                 if not game_state.contains_stationary_unit(support_loc):
                     break
+        
+
 
         game_state.attempt_spawn(SUPPORT, support_loc)
-        # only if above y=7: game_state.attempt_upgrade(support_loc)
+        # only if above y=7: 
+        if support_loc[1] > 7: 
+            game_state.attempt_upgrade(support_loc)
         game_state.attempt_remove(support_loc)
 
     """
@@ -295,15 +294,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         state = json.loads(turn_string)
         events = state["events"]
         breaches = events["breach"]
-        for breach in breaches:
-            location = breach[0]
-            unit_owner_self = True if breach[4] == 1 else False
-            # When parsing the frame data directly, 
-            # 1 is integer for yourself, 2 is opponent (StarterKit code uses 0, 1 as player_index instead)
-            if not unit_owner_self:
-                gamelib.debug_write("Got scored on at: {}".format(location))
-                self.scored_on_locations.append(location)
-                gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
+        turninfo = state["turnInfo"]
+        # check deploy phase to identify spawn locations
+
+        
 
 
 if __name__ == "__main__":

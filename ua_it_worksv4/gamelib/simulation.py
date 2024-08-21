@@ -26,6 +26,7 @@ class Simulation():
             else:
                 self.copy_game.game_map.add_unit(name, [x,y], 0)
     
+    #def old_troops
 
 
 
@@ -41,7 +42,7 @@ class Simulation():
 
         gamelib.debug_write(f"attack_paths_k=3: {sorted(paths, key=lambda x: (x[3], -x[2], x[1]), reverse = True)[:3]}")
 
-        return sorted(paths, key=lambda x: (x[3], -x[2], x[1]), reverse = True)[0]
+        return sorted(paths, key=lambda x: (x[2], -x[1]))[0]
         
     def simulate_path(self, location, amount_of_troops, unit_type, player_index):
         self.update_placements()
@@ -57,7 +58,7 @@ class Simulation():
         current = location
         self.supports = set()
 
-        damage_given, damage_taken, previous_move_direction = 0, 0, 0
+        damage_given, damage_taken, previous_move_direction, turrets_destroyed = 0, 0, 0, 0
 
         while (not path_finder.game_map[current[0]][current[1]].pathlength == 0) and len(self.copy_game.game_map[current])>0:
             next_move = path_finder._choose_next_move(current, previous_move_direction, end_points)
@@ -71,25 +72,21 @@ class Simulation():
             turn = self.damage_calculations(current, 0, path_finder, location, end_points)
             damage_given += turn['target_damage']
             damage_taken += turn['net_damage']
+            turrets_destroyed+= turn['turrets_destroyed']
 
-                
-
-
-        if len(self.copy_game.game_map[current])>0:
-            turn = self.damage_calculations(current, 0, path_finder, location, end_points)
-            damage_given += turn['target_damage']
-            damage_taken += turn['net_damage']
 
         damage_to_opponent_health = len(self.copy_game.game_map[current])
         self.copy_game = GameState(self.orig_game.config, self.orig_game.serialized_string)
         
-        return (location, damage_given, damage_taken, damage_to_opponent_health)
+        return (location, damage_given, damage_taken, damage_to_opponent_health, turrets_destroyed)
         
 
     def move_units(self, location_1, location_2):
         for unit in tuple(self.copy_game.game_map[location_1]):
             self.copy_game.game_map[location_2].append(unit)
             self.copy_game.game_map[location_1].pop(0)
+            unit.x,unit.y = location_2[0], location_2[1]
+        gamelib.debug_write(f'old: {self.copy_game.game_map[location_1]} new: {self.copy_game.game_map[location_2]}')
 
     def damage_calculations(self, location, player_index, nav, spawn_location, end_points):
         supports = self.copy_game.get_shielders(location, player_index)
@@ -102,32 +99,39 @@ class Simulation():
                     net_damage -= (support.shieldPerUnit + support.shieldBonusPerY*support.y)
                 self.supports.add((support.x, support.y))
 
-        total_damage = sum([unit.damage_i for unit in attackers])
-        net_damage+=total_damage
-
+        total_damages = [unit.damage_i for unit in attackers]
+        target_damage = [self.copy_game.game_map[location][0].damage_f for _ in range(len(self.copy_game.game_map[location]))]
         target = self.copy_game.get_target(self.copy_game.game_map[location][0])
-        target_damage = self.copy_game.game_map[location][0].damage_f * len(self.copy_game.game_map[location])
+        damage_given = 0
+        turrets_destroyed = 0
 
-        while total_damage>0 and len(self.copy_game.game_map[location])>0:
-            if self.copy_game.game_map[location][-1].health>total_damage:
-                self.copy_game.game_map[location][-1].health -= total_damage
-                break
+        while target and target_damage:
+            if target.health > target_damage[-1]:
+                target.health-=target_damage[-1]
+                damage_given+=target_damage.pop()
             else:
-                total_damage -= self.copy_game.game_map[location][-1].health
-                self.copy_game.game_map[location].pop()
-        while target and target_damage>0:
-            if target.health > target_damage:
-                target.health-=target_damage
-            else:
-                target_damage -= target.health
+                damage_given+=target.health
+
+                target_damage.pop()
+                if target.unit_type == self.copy_game.config["unitInformation"][2]["shorthand"]:
+                    turrets_destroyed+=1
                 self.copy_game.game_map[[target.x, target.y]].pop()
                 target = self.copy_game.get_target(self.copy_game.game_map[location][0])
+
+        while total_damages and len(self.copy_game.game_map[location])>0:
+            if self.copy_game.game_map[location][-1].health>total_damages[-1]:
+                self.copy_game.game_map[location][-1].health -= total_damages[-1]
+                net_damage+=total_damages.pop()
+                
+            else:
+                net_damage += self.copy_game.game_map[location][-1].health
+                self.copy_game.game_map[location].pop()
             # COMMENTED OUT HERE
             # nav.ideal_endpoints = nav._idealness_search(spawn_location, end_points)
             # nav._validate(nav.ideal_endpoints, end_points)
 
         
-        return {'net_damage': net_damage, 'target_damage': target_damage}
+        return {'net_damage': net_damage, 'target_damage': damage_given, 'turrets_destroyed': turrets_destroyed}
 
     
 
