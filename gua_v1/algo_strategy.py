@@ -69,7 +69,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             sim = gamelib.Simulation(game_state)
             edges = game_state.game_map.get_edges()
             spawnable_edges = self.filter_blocked_locations(edges[2]+edges[3], game_state)
-            location, structure_damage, damage_taken, damage_to_opponent = sim.best_attack_path(spawnable_edges, int(game_state.get_resources(0)[1]), self.config["unitInformation"][3]["shorthand"], 0)
+            location, structure_damage, damage_taken, damage_to_opponent, turrets_destroyed = sim.best_attack_path(spawnable_edges, int(game_state.get_resources(0)[1]), self.config["unitInformation"][3]["shorthand"], 0)
             if self.to_attack(game_state,structure_damage,damage_to_opponent, int(game_state.get_resources(0)[1])):
                 # ADDS SUPPORT FOR OFFENSE
                 self.add_support(game_state, location)
