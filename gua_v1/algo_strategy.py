@@ -129,10 +129,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         # self.defense_2(game_state)
 
         # @DAVID reactive defenses
-        # self.reactive_defenses(game_state)
+        self.reactive_defenses(game_state)
 
         # @DAVID building upon
-        # self.build_up_defenses(game_state)
+        self.build_up_defenses(game_state)
 
         
     def improved_defense(self, game_state):
